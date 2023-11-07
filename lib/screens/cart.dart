@@ -1,25 +1,27 @@
 import 'package:flutter/material.dart';
-import "package:shopify/data/dummy_data.dart";
 import 'package:shopify/screens/add_item.dart';
 import 'package:shopify/widget/grocery_item.dart';
+import "package:shopify/provider/grocery_data_provider.dart";
+import "package:flutter_riverpod/flutter_riverpod.dart";
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends ConsumerWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final groferItems = ref.watch(groceryItemsProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text("Your Groceries"),
       ),
       body: ListView.builder(
-        itemCount: groceryItems.length,
+        itemCount: groferItems.length,
         padding: const EdgeInsets.all(20.0),
         itemBuilder: (ctx, index) {
           return GroceryItemWidget(
-            name: groceryItems[index].name,
-            quantity: groceryItems[index].quantity,
-            color: groceryItems[index].category.color,
+            name: groferItems[index].name,
+            quantity: groferItems[index].quantity,
+            color: groferItems[index].category.color,
           );
         },
       ),

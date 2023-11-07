@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shopify/data/categories.dart';
 import 'package:shopify/models/category.dart';
+import 'package:shopify/models/grocery_item.dart';
+import "package:shopify/provider/grocery_data_provider.dart";
 
-class AddItemScreen extends StatefulWidget {
+class AddItemScreen extends ConsumerStatefulWidget {
   const AddItemScreen({super.key});
 
   @override
-  State<AddItemScreen> createState() => _AddItemScreenState();
+  ConsumerState<AddItemScreen> createState() => _AddItemScreenState();
 }
 
-class _AddItemScreenState extends State<AddItemScreen> {
+class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   final _formKey = GlobalKey<FormState>();
 
   String enterdName = "";
@@ -19,6 +22,15 @@ class _AddItemScreenState extends State<AddItemScreen> {
   void _saveItems() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+
+      ref.read(groceryItemsProvider.notifier).addItemToCart(
+            GroceryItem(
+              id: DateTime.now().toString(),
+              name: enterdName,
+              quantity: enterdQuantity,
+              category: enteredCategory!,
+            ),
+          );
     }
   }
 
