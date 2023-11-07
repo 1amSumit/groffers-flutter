@@ -9,6 +9,10 @@ class GroceryDataNotifier extends StateNotifier<List<GroceryItem>> {
   void addItemToCart(GroceryItem item) {
     state = [...state, item];
   }
+
+  void removeItemFromCart(GroceryItem item) {
+    state = state.where((g) => g.id != item.id).toList();
+  }
 }
 
 final groceryItemsProvider =

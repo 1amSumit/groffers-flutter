@@ -31,6 +31,7 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
               category: enteredCategory!,
             ),
           );
+      Navigator.pop(context);
     }
   }
 
