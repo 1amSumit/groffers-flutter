@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shopify/data/categories.dart';
+import 'package:shopify/models/category.dart';
 
 class AddItemScreen extends StatefulWidget {
   const AddItemScreen({super.key});
@@ -9,6 +10,18 @@ class AddItemScreen extends StatefulWidget {
 }
 
 class _AddItemScreenState extends State<AddItemScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  String enterdName = "";
+  int enterdQuantity = 1;
+  var enteredCategory = categories[Categories.vegetables];
+
+  void _saveItems() {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -20,6 +33,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
       body: Padding(
         padding: const EdgeInsets.all(12.0),
         child: Form(
+          key: _formKey,
           child: Column(
             children: [
               TextFormField(
@@ -28,7 +42,16 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   label: Text("Name"),
                 ),
                 validator: (value) {
-                  return "Demo..";
+                  if (value == null ||
+                      value.isEmpty ||
+                      value.trim().length <= 1 ||
+                      value.trim().length > 50) {
+                    return "Must be between 1 and 50 characters.";
+                  }
+                  return null;
+                },
+                onSaved: (value) {
+                  enterdName = value!;
                 },
               ),
               Row(
@@ -39,7 +62,20 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       decoration: const InputDecoration(
                         label: Text("Quantity"),
                       ),
+                      keyboardType: TextInputType.number,
                       initialValue: "1",
+                      validator: (value) {
+                        if (value == null ||
+                            value.isEmpty ||
+                            int.tryParse(value) == null ||
+                            int.tryParse(value)! <= 0) {
+                          return "Must be valid positive number.";
+                        }
+                        return null;
+                      },
+                      onSaved: (value) {
+                        enterdQuantity = int.parse(value!);
+                      },
                     ),
                   ),
                   const SizedBox(
@@ -47,6 +83,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   ),
                   Expanded(
                     child: DropdownButtonFormField(
+                        value: enteredCategory,
                         items: [
                           for (final category in categories.entries)
                             DropdownMenuItem(
@@ -67,7 +104,9 @@ class _AddItemScreenState extends State<AddItemScreen> {
                             )
                         ],
                         onChanged: (value) {
-                          print(value);
+                          setState(() {
+                            enteredCategory = value!;
+                          });
                         }),
                   )
                 ],
@@ -78,9 +117,13 @@ class _AddItemScreenState extends State<AddItemScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(onPressed: () {}, child: const Text("Reset")),
+                  TextButton(
+                      onPressed: () {
+                        _formKey.currentState!.reset();
+                      },
+                      child: const Text("Reset")),
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: _saveItems,
                     child: const Text("Add Item"),
                   ),
                 ],

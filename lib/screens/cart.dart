@@ -10,21 +10,6 @@ class CartScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (ctx) {
-                    return const AddItemScreen();
-                  },
-                ),
-              );
-            },
-            icon: const Icon(Icons.add),
-          ),
-        ],
         title: const Text("Your Groceries"),
       ),
       body: ListView.builder(
@@ -37,6 +22,19 @@ class CartScreen extends StatelessWidget {
             color: groceryItems[index].category.color,
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (ctx) {
+                return const AddItemScreen();
+              },
+            ),
+          );
+        },
+        label: const Icon(Icons.add),
       ),
     );
   }
