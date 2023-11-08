@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:shopify/data/categories.dart';
+import 'package:shopify/data/dummy_data.dart';
 import 'package:shopify/models/grocery_item.dart';
 import 'package:shopify/screens/add_item.dart';
 
@@ -23,45 +24,66 @@ class _CartScreenState extends State<CartScreen> {
         "shopify-1715f-default-rtdb.asia-southeast1.firebasedatabase.app",
         "cart.json");
 
-    final res = await http.get(url);
+    try {
+      final res = await http.get(url);
 
-    if (res.statusCode >= 400) {
+      if (res.statusCode >= 400) {
+        setState(() {
+          _error = "Failed to fetch the data. PLease try again later.";
+        });
+      }
+
+      if (res.body == 'null') {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final Map<String, dynamic> listData = json.decode(res.body);
+      final List<GroceryItem> loadItems = [];
+      for (final item in listData.entries) {
+        final category = categories.entries
+            .firstWhere(
+                (catItme) => catItme.value.type == item.value['category'])
+            .value;
+        loadItems.add(
+          GroceryItem(
+            id: item.key,
+            name: item.value["name"],
+            quantity: item.value["quantity"],
+            category: category,
+          ),
+        );
+      }
       setState(() {
-        _error = "Failed to fetch the data. PLease try again later.";
+        groferItems = loadItems;
+        _isLoading = false;
+      });
+    } catch (error) {
+      setState(() {
+        _error = "Something went very wrong. PLease try again later.";
       });
     }
-
-    final Map<String, dynamic> listData = json.decode(res.body);
-    final List<GroceryItem> loadItems = [];
-    for (final item in listData.entries) {
-      final category = categories.entries
-          .firstWhere((catItme) => catItme.value.type == item.value['category'])
-          .value;
-      loadItems.add(
-        GroceryItem(
-          id: item.key,
-          name: item.value["name"],
-          quantity: item.value["quantity"],
-          category: category,
-        ),
-      );
-    }
-    setState(() {
-      groferItems = loadItems;
-      _isLoading = false;
-    });
   }
 
-  void removItem(GroceryItem item) {
+  void removItem(GroceryItem item) async {
+    final index = groceryItems.indexOf(item);
+    setState(() {
+      groferItems.remove(item);
+    });
+
     final url = Uri.https(
         "shopify-1715f-default-rtdb.asia-southeast1.firebasedatabase.app",
         "cart/${item.id}.json");
 
-    http.delete(url);
+    final res = await http.delete(url);
 
-    setState(() {
-      groferItems.remove(item);
-    });
+    if (res.statusCode >= 400) {
+      setState(() {
+        groferItems.insert(index, item);
+      });
+    }
   }
 
   @override
