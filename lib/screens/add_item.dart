@@ -1,9 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shopify/data/categories.dart';
 import 'package:shopify/models/category.dart';
+// import 'package:shopify/models/grocery_item.dart';
+// import "package:shopify/provider/grocery_data_provider.dart";
+
+import "package:http/http.dart" as http;
 import 'package:shopify/models/grocery_item.dart';
-import "package:shopify/provider/grocery_data_provider.dart";
 
 class AddItemScreen extends ConsumerStatefulWidget {
   const AddItemScreen({super.key});
@@ -14,24 +19,50 @@ class AddItemScreen extends ConsumerStatefulWidget {
 
 class _AddItemScreenState extends ConsumerState<AddItemScreen> {
   final _formKey = GlobalKey<FormState>();
+  bool _isSending = false;
 
   String enterdName = "";
   int enterdQuantity = 1;
-  var enteredCategory = categories[Categories.vegetables];
+  Category enteredCategory = categories[Categories.vegetables]!;
 
-  void _saveItems() {
+  void _saveItems() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+      setState(() {
+        _isSending = true;
+      });
+      final url = Uri.https(
+          "shopify-1715f-default-rtdb.asia-southeast1.firebasedatabase.app",
+          "cart.json");
 
-      ref.read(groceryItemsProvider.notifier).addItemToCart(
-            GroceryItem(
-              id: DateTime.now().toString(),
-              name: enterdName,
-              quantity: enterdQuantity,
-              category: enteredCategory!,
-            ),
-          );
-      Navigator.pop(context);
+      final res = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: json.encode(
+          {
+            "name": enterdName,
+            "quantity": enterdQuantity,
+            "category": enteredCategory.type,
+          },
+        ),
+      );
+
+      final Map<String, dynamic> resData = jsonDecode(res.body);
+
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.of(context).pop(
+        GroceryItem(
+          id: resData["name"],
+          name: enterdName,
+          quantity: enterdQuantity,
+          category: enteredCategory,
+        ),
+      );
     }
   }
 
@@ -131,13 +162,21 @@ class _AddItemScreenState extends ConsumerState<AddItemScreen> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   TextButton(
-                      onPressed: () {
-                        _formKey.currentState!.reset();
-                      },
+                      onPressed: _isSending
+                          ? null
+                          : () {
+                              _formKey.currentState!.reset();
+                            },
                       child: const Text("Reset")),
                   ElevatedButton(
-                    onPressed: _saveItems,
-                    child: const Text("Add Item"),
+                    onPressed: _isSending ? null : _saveItems,
+                    child: _isSending
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(),
+                          )
+                        : const Text("Add Item"),
                   ),
                 ],
               )

@@ -1,18 +1,66 @@
-import 'package:flutter/material.dart';
-import 'package:shopify/screens/add_item.dart';
-import "package:shopify/provider/grocery_data_provider.dart";
-import "package:flutter_riverpod/flutter_riverpod.dart";
+import 'dart:convert';
 
-class CartScreen extends ConsumerWidget {
+import 'package:flutter/material.dart';
+import 'package:shopify/data/categories.dart';
+import 'package:shopify/models/grocery_item.dart';
+import 'package:shopify/screens/add_item.dart';
+
+import "package:http/http.dart" as http;
+
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final groferItems = ref.watch(groceryItemsProvider);
+  State<CartScreen> createState() => _CartScreenState();
+}
 
+class _CartScreenState extends State<CartScreen> {
+  List<GroceryItem> groferItems = [];
+  bool _isLoading = true;
+  void getData() async {
+    final url = Uri.https(
+        "shopify-1715f-default-rtdb.asia-southeast1.firebasedatabase.app",
+        "cart.json");
+
+    final res = await http.get(url);
+    final Map<String, dynamic> listData = json.decode(res.body);
+    final List<GroceryItem> loadItems = [];
+    for (final item in listData.entries) {
+      final category = categories.entries
+          .firstWhere((catItme) => catItme.value.type == item.value['category'])
+          .value;
+      loadItems.add(
+        GroceryItem(
+          id: item.key,
+          name: item.value["name"],
+          quantity: item.value["quantity"],
+          category: category,
+        ),
+      );
+    }
+    setState(() {
+      groferItems = loadItems;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    getData();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     Widget content = const Center(
       child: Text("No items in the cart."),
     );
+
+    if (_isLoading) {
+      content = const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
 
     if (groferItems.isNotEmpty) {
       content = ListView.builder(
@@ -20,11 +68,7 @@ class CartScreen extends ConsumerWidget {
         itemBuilder: (ctx, index) {
           //for sliding the element to remove the content
           return Dismissible(
-            onDismissed: (direction) {
-              ref
-                  .read(groceryItemsProvider.notifier)
-                  .removeItemFromCart(groferItems[index]);
-            },
+            onDismissed: (direction) {},
             key: ValueKey(groferItems[index]),
             child: ListTile(
               title: Text(groferItems[index].name),
@@ -45,15 +89,22 @@ class CartScreen extends ConsumerWidget {
       ),
       body: content,
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
+        onPressed: () async {
+          final newItem = await Navigator.of(context).push<GroceryItem>(
             MaterialPageRoute(
               builder: (ctx) {
                 return const AddItemScreen();
               },
             ),
           );
+
+          if (newItem == null) {
+            return;
+          }
+
+          setState(() {
+            groferItems.add(newItem);
+          });
         },
         label: const Icon(Icons.add),
       ),
