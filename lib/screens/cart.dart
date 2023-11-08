@@ -17,12 +17,20 @@ class CartScreen extends StatefulWidget {
 class _CartScreenState extends State<CartScreen> {
   List<GroceryItem> groferItems = [];
   bool _isLoading = true;
+  String? _error;
   void getData() async {
     final url = Uri.https(
         "shopify-1715f-default-rtdb.asia-southeast1.firebasedatabase.app",
         "cart.json");
 
     final res = await http.get(url);
+
+    if (res.statusCode >= 400) {
+      setState(() {
+        _error = "Failed to fetch the data. PLease try again later.";
+      });
+    }
+
     final Map<String, dynamic> listData = json.decode(res.body);
     final List<GroceryItem> loadItems = [];
     for (final item in listData.entries) {
@@ -44,6 +52,18 @@ class _CartScreenState extends State<CartScreen> {
     });
   }
 
+  void removItem(GroceryItem item) {
+    final url = Uri.https(
+        "shopify-1715f-default-rtdb.asia-southeast1.firebasedatabase.app",
+        "cart/${item.id}.json");
+
+    http.delete(url);
+
+    setState(() {
+      groferItems.remove(item);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -62,13 +82,21 @@ class _CartScreenState extends State<CartScreen> {
       );
     }
 
+    if (_error != null) {
+      content = Center(
+        child: Text(_error!),
+      );
+    }
+
     if (groferItems.isNotEmpty) {
       content = ListView.builder(
         itemCount: groferItems.length,
         itemBuilder: (ctx, index) {
           //for sliding the element to remove the content
           return Dismissible(
-            onDismissed: (direction) {},
+            onDismissed: (direction) {
+              removItem(groferItems[index]);
+            },
             key: ValueKey(groferItems[index]),
             child: ListTile(
               title: Text(groferItems[index].name),
